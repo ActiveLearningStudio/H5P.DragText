@@ -80,6 +80,7 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
         "This is another line of *fantastic* text.",
       overallFeedback: [],
       checkAnswer: "Check",
+      submitAnswers: "Submit Answers",
       tryAgain: "Retry",
       behaviour: {
         enableRetry: true,
@@ -401,9 +402,12 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
 
     if (self.params.behaviour.enableCheckButton) {
       // Checking answer button
-      self.addButton('check-answer', self.params.checkAnswer, function () {
+      self.addButton('check-answer', "Submit Answers", function () {
         self.answered = true;
         self.removeAllElementsFromDragControl();
+        if(typeof self.parent == "undefined") {
+          self.triggerXAPIScored(0,  1, 'submitted-curriki');
+        }
 
         if (!self.showEvaluation()) {
           if (self.params.behaviour.enableRetry) {
@@ -426,6 +430,28 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
         'aria-label': self.params.a11yCheck,
       });
     }
+
+
+    /*self.addButton('submit-answers', self.params.submitAnswers, function () {
+      self.answered = true;
+      self.removeAllElementsFromDragControl();
+      self.triggerXAPIScored(0,  1, 'submitted-curriki');
+      self.hideButton('show-solution');
+        self.hideButton('try-again');
+        self.hideButton('check-answer');
+        self.hideButton('submit-answers');
+        self.showEvaluation();
+        self.disableDraggables();
+        
+
+      // Focus top of the task for natural navigation
+      self.$introduction.parent().focus();
+    }, !self.params.behaviour.instantFeedback, {
+      'aria-label': self.params.a11yCheck,
+    });*/
+
+
+
 
     //Show Solution button
     self.addButton('show-solution', self.params.showSolution, function () {
