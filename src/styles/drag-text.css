@@ -190,8 +190,9 @@
   border-radius: 0.25em;
   margin-left: 0.5em;
 }
-
+/*--custom-css--float-left--property--added--*/
 .h5p-drag-text .h5p-drag-droppable-words {
+  float: left;
   line-height: 1.75;
 }
 
@@ -205,9 +206,9 @@
   display: inline-block;
 }
 
-/* Wide Screen css : */
+/* Wide Screen css : custom-css--float-right--property--removed--*/
 .h5p-drag-text .h5p-drag-wide-screen {
-  float: right;
+  /*float: right;*/
   padding-top: 0;
 }
 
