@@ -402,7 +402,7 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
 
     if (self.params.behaviour.enableCheckButton) {
       // Checking answer button
-      self.addButton('check-answer', "Submit Answers", function () {
+      self.addButton('check-answer', self.params.checkAnswer, function () {
         self.answered = true;
         self.removeAllElementsFromDragControl();
         if(typeof self.parent == "undefined") {
