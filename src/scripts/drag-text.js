@@ -406,7 +406,9 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
         self.answered = true;
         self.removeAllElementsFromDragControl();
         if(typeof self.parent == "undefined") {
-          self.triggerXAPIScored(0,  1, 'submitted-curriki');
+          var currentScore = self.getScore();
+          var maxScore = self.droppables.length;
+          self.triggerXAPIScored(currentScore,  maxScore, 'submitted-curriki');
         }
 
         if (!self.showEvaluation()) {
