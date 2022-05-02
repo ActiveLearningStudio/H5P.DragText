@@ -221,7 +221,7 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
      */
     this.setActivityStarted = (function (original) {
       return function () {
-        original();
+        original.call(self);
         self.stopWatch.reset()
       };
     })(this.setActivityStarted);
