@@ -72,6 +72,7 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
     this.contentId = contentId;
     this.contentData = contentData;
     Question.call(this, 'drag-text');
+    var self = this;
 
     // Set default behavior.
     this.params = $.extend(true, {
@@ -212,6 +213,18 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
     if (this.params.behaviour.instantFeedback) {
       this.on('revert', () => this.instantFeedbackEvaluation());
     }
+
+
+    /**
+     * Overrides the set activity started method of the superclass (H5P.EventDispatcher) and calls it
+     * at the same time.
+     */
+    this.setActivityStarted = (function (original) {
+      return function () {
+        original();
+        self.stopWatch.reset()
+      };
+    })(this.setActivityStarted);
   }
 
   DragText.prototype = Object.create(Question.prototype);
@@ -1295,6 +1308,11 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
     }
     self.hideAllSolutions();
     this.trigger('resize');
+    // reset stop watch and activity start time
+    self.stopWatch.reset();
+    if(self.activityStartTime) {
+      self.activityStartTime = Date.now();
+    }
   };
 
   /**
