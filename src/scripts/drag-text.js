@@ -504,7 +504,8 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
       }
       self.hideAllSolutions();
 
-      self.stopWatch.reset();
+      // reset stop watch and activity start time
+      self.resetActivityTime();
       self.read(self.params.taskDescription);
     }, self.initShowTryAgainButton || false, {
       'aria-label': self.params.a11yRetry,
@@ -1309,9 +1310,16 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
     self.hideAllSolutions();
     this.trigger('resize');
     // reset stop watch and activity start time
-    self.stopWatch.reset();
-    if(self.activityStartTime) {
-      self.activityStartTime = Date.now();
+    self.resetActivityTime();
+  };
+
+  /**
+   * Resets the activity start time
+   */
+  DragText.prototype.resetActivityTime = function() {
+    this.stopWatch.reset();
+    if(this.activityStartTime) {
+      this.activityStartTime = Date.now();
     }
   };
 
