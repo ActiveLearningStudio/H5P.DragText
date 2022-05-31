@@ -76,12 +76,14 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
 
     // Set default behavior.
     this.params = $.extend(true, {
+      media: {},
       taskDescription: "Set in adjectives in the following sentence",
       textField: "This is a *nice*, *flexible* content type, which allows you to highlight all the *wonderful* words in this *exciting* sentence.\n" +
         "This is another line of *fantastic* text.",
       overallFeedback: [],
       checkAnswer: "Check",
       submitAnswers: "Submit Answers",
+      submitAnswer: "Submit",
       tryAgain: "Retry",
       behaviour: {
         enableRetry: true,
@@ -115,7 +117,6 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
 
     // Keeps track of if Question has been answered
     this.answered = false;
-    this.instantFeedbackEvaluationFilled = false;
 
     // Convert line breaks to HTML
     this.textFieldHtml = this.params.textField.replace(/(\r\n|\n|\r)/gm, "<br/>");
@@ -312,6 +313,8 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
     const hasChildren = (dropZone.childNodes.length > 0);
 
     if (dropZone) {
+      let ariaLabel;
+
       if (checkButtonPressed) {
         const droppable = this.getDroppableByElement(dropZone);
         let resultString = '';
@@ -321,14 +324,22 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
         else {
           resultString = droppable.incorrectFeedback ? droppable.incorrectFeedback : this.params.incorrectText;
         }
-        dropZone.setAttribute('aria-label', `${indexText} ${this.params.contains.replace('@index', index.toString()).replace('@draggable', text)} ${resultString}.`);
+        ariaLabel = `${this.params.contains.replace('@index', index.toString()).replace('@draggable', text)} ${resultString}.`;
+
+        if (droppable && droppable.containedDraggable) {
+          droppable.containedDraggable.updateAriaDescription(
+            correctFeedback ? this.params.correctText : this.params.incorrectText
+          );
+        }
       }
       else if (hasChildren) {
-        dropZone.setAttribute('aria-label', `${indexText} ${this.params.contains.replace('@index', index.toString()).replace('@draggable', text)}`);
+        ariaLabel = `${this.params.contains.replace('@index', index.toString()).replace('@draggable', text)}`;
       }
       else {
-        dropZone.setAttribute('aria-label',  `${indexText} ${this.params.empty.replace('@index', index.toString())}`);
+        ariaLabel = `${this.params.empty.replace('@index', index.toString())}`;
       }
+
+      dropZone.setAttribute('aria-label', ariaLabel);
     }
   };
 
@@ -337,6 +348,35 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
    * Called from H5P.Question.
    */
   DragText.prototype.registerDomElements = function () {
+    // Register optional media
+    let media = this.params.media;
+    if (media && media.type && media.type.library) {
+      media = media.type;
+      const type = media.library.split(' ')[0];
+      if (type === 'H5P.Image') {
+        if (media.params.file) {
+          // Register task image
+          this.setImage(media.params.file.path, {
+            disableImageZooming: this.params.media.disableImageZooming || false,
+            alt: media.params.alt,
+            title: media.params.title
+          });
+        }
+      }
+      else if (type === 'H5P.Video') {
+        if (media.params.sources) {
+          // Register task video
+          this.setVideo(media);
+        }
+      }
+      else if (type === 'H5P.Audio') {
+        if (media.params.files) {
+          // Register task audio
+          this.setAudio(media);
+        }
+      }
+    }
+
     // Register task introduction text
     this.$introduction = $('<p id="' + this.introductionId + '">' + this.params.taskDescription + '</p>');
     this.setIntroduction(this.$introduction);
@@ -443,6 +483,9 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
         self.$introduction.parent().focus();
       }, !self.params.behaviour.instantFeedback, {
         'aria-label': self.params.a11yCheck,
+      }, {
+        contentData: self.contentData,
+        textIfSubmitting: self.params.submitAnswer,
       });
     }
 
@@ -532,7 +575,7 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
     var hasSelectedElement = this.selectedElement !== undefined;
     var isSelectedElement = this.selectedElement ===  event.element;
 
-    // un select the selected
+    // unselect the selected
     if(hasSelectedElement){
       this.selectedElement = undefined;
       this.trigger('stop', { element: tmp });
@@ -791,16 +834,8 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
         if(self.isAnswerPart(part)) {
           // is draggable/droppable
           const solution = lex(part);
-          const draggable = self.createDraggable(solution.text);
-          const droppable = self.createDroppable(solution.text, solution.tip, solution.correctFeedback, solution.incorrectFeedback);
-
-          // trigger instant feedback
-          if (self.params.behaviour.instantFeedback) {
-            draggable.getDraggableElement().on('dragstop', function() {
-              droppable.addFeedback();
-              self.instantFeedbackEvaluation();
-            });
-          }
+          self.createDraggable(solution.text);
+          self.createDroppable(solution.text, solution.tip, solution.correctFeedback, solution.incorrectFeedback);
         }
         else {
           // is normal text
@@ -1140,10 +1175,9 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
       }
 
       // Shows evaluation text
-      self.showEvaluation(!self.instantFeedbackEvaluationFilled);
-      self.instantFeedbackEvaluationFilled = true;
-    } else {
-      self.instantFeedbackEvaluationFilled = false;
+      self.showEvaluation();
+    } 
+    else {
       //Hides "retry" and "show solution" buttons.
       self.hideButton('try-again');
       self.hideButton('show-solution');
@@ -1293,7 +1327,6 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
     var self = this;
     // Reset task answer
     self.answered = false;
-    self.instantFeedbackEvaluationFilled = false;
     //Reset draggables parameters and position
     self.resetDraggables();
     //Hides solution text and re-enable draggables
@@ -1543,6 +1576,16 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
       .join('[,]');
   };
 
+  /**
+   * Get parsed texts
+   *
+   * @param {string} question
+   * @returns {string} Array with a string containing solutions of a question
+   */
+  DragText.prototype.parseText = function (question) {
+    return parseText(question);
+  };
+
   return DragText;
 
 }(H5P.jQuery, H5P.Question, H5P.ConfirmationDialog));
@@ -1550,16 +1593,16 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
 /**
  * Static helper method to enable parsing of question text into a format useful
  * for generating reports.
- * 
+ *
  * PS: The leading backslash for the correct and incorrect feedback within
  * answer parts must be escaped appropriately:
- * 
+ *
  * Example:
- * 
+ *
  * question: 'H5P content is *interactive\\+Correct! \\-Incorrect, try again!*.'
- * 
+ *
  * produces the following:
- * 
+ *
  * [
  *   {
  *     type: 'text',
@@ -1567,14 +1610,14 @@ H5P.DragText = (function ($, Question, ConfirmationDialog) {
  *   },
  *   {
  *     type: 'answer',
- *     correct: 'interactive'  
+ *     correct: 'interactive'
  *   },
  *   {
  *     type: 'text',
  *     content: '.'
  *   }
  * ]
- * 
+ *
  * @param {string} question Question text for an H5P.DragText content item
  */
 H5P.DragText.parseText = function (question) {

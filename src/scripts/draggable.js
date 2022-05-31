@@ -21,9 +21,14 @@ H5P.TextDraggable = (function ($) {
 
     self.shortFormat = self.text;
     //Shortens the draggable string if inside a dropbox.
-    if (self.shortFormat.length > 20) {
+    if (self.shortFormat.length > 20 && !self.shortFormat.match(/\\\(.+\\\)|\\\[.+\\\]|\$\$.+\$\$/)) {
       self.shortFormat = self.shortFormat.slice(0, 17) + '...';
     }
+
+    // jQuery UI workaround
+    self.$draggable.on('touchstart', function (event) {
+      event.stopPropagation();
+    });
   }
 
   Draggable.prototype = Object.create(H5P.EventDispatcher.prototype);
@@ -141,6 +146,15 @@ H5P.TextDraggable = (function ($) {
   };
 
   /**
+   * Update the Draggable's aria-description attribute.
+   *
+   * @param {String} description
+   */
+  Draggable.prototype.updateAriaDescription = function (description) {
+    this.$draggable.attr('aria-description', description);
+  };
+
+  /**
    * Gets the draggable element for this class.
    *
    * @returns {HTMLElement}
@@ -164,6 +178,7 @@ H5P.TextDraggable = (function ($) {
     }
     this.toggleDroppedFeedback(false);
     this.removeShortFormat();
+    this.updateAriaDescription('');
     this.insideDropzone = null;
 
     return dropZone;
